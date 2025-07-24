@@ -51,6 +51,55 @@
             border-bottom: 1px solid #e5e7eb;
         }
 
+        .google-sheets-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .google-sheets-input {
+            width: 100%;
+            max-width: 600px;
+            padding: 12px 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            transition: border-color 0.3s ease;
+        }
+
+        .google-sheets-input:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+
+        .load-sheets-button {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+        }
+
+        .load-sheets-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(14, 165, 233, 0.4);
+        }
+
+        .sheets-help {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin-top: 10px;
+            line-height: 1.5;
+        }
+
         .file-input-wrapper {
             position: relative;
             display: inline-block;
@@ -708,7 +757,7 @@
     <div class="container">
         <div class="header">
             <h1>🛍️ Shopify CSV Viewer</h1>
-            <p>Load and preview your Shopify export data with image validation</p>
+            <p>Load and preview your Shopify export data from CSV files or Google Sheets with image validation</p>
         </div>
 
         <div class="upload-section">
@@ -717,6 +766,20 @@
                 <button class="file-input-button">📁 Choose CSV File</button>
             </div>
             <!--button id="loadDefault" class="load-default-button">📊 Load Default Output</button-->
+            
+            <div class="google-sheets-section">
+                <h3 style="margin-bottom: 15px; color: #374151;">📊 Load from Google Sheets</h3>
+                <input type="text" id="sheetsUrl" class="google-sheets-input" placeholder="Paste your Google Sheets URL here..." />
+                <br>
+                <button id="loadSheets" class="load-sheets-button">🔗 Load from Google Sheets</button>
+                <div class="sheets-help">
+                    <strong>How to use:</strong><br>
+                    1. Open your Google Sheet<br>
+                    2. Go to File → Share → Publish to web<br>
+                    3. Choose "Comma-separated values (.csv)" format<br>
+                    4. Copy the published URL and paste it above
+                </div>
+            </div>
         </div>
 
         <div id="stats" class="stats" style="display: none;">
@@ -780,7 +843,9 @@
 
         // DOM elements
         const csvFileInput = document.getElementById('csvFile');
-        const loadDefaultBtn = document.getElementById('loadDefault');
+        // const loadDefaultBtn = document.getElementById('loadDefault');
+        const sheetsUrlInput = document.getElementById('sheetsUrl');
+        const loadSheetsBtn = document.getElementById('loadSheets');
         const searchInput = document.getElementById('searchInput');
         const columnFilter = document.getElementById('columnFilter');
         const tableContainer = document.getElementById('tableContainer');
@@ -803,6 +868,7 @@
         // Event listeners
         csvFileInput.addEventListener('change', handleFileSelect);
         // loadDefaultBtn.addEventListener('click', loadDefaultFile);
+        loadSheetsBtn.addEventListener('click', loadFromGoogleSheets);
         searchInput.addEventListener('input', filterData);
         columnFilter.addEventListener('change', filterData);
         cardViewBtn.addEventListener('click', () => switchView('card'));
@@ -810,6 +876,13 @@
         closeModal.addEventListener('click', () => modal.style.display = 'none');
         modal.addEventListener('click', (e) => {
             if (e.target === modal) modal.style.display = 'none';
+        });
+        
+        // Allow Enter key to load Google Sheets
+        sheetsUrlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                loadFromGoogleSheets();
+            }
         });
 
         function handleFileSelect(event) {
@@ -833,6 +906,54 @@
             } catch (err) {
                 showError(`Error loading default file: ${err.message}`);
             }
+        }
+
+        async function loadFromGoogleSheets() {
+            const url = sheetsUrlInput.value.trim();
+            if (!url) {
+                showError('Please enter a Google Sheets URL.');
+                return;
+            }
+
+            try {
+                showLoading();
+                const csvUrl = convertToCSVUrl(url);
+                const response = await fetch(csvUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch data: ${response.status} ${response.statusText}`);
+                }
+                
+                const text = await response.text();
+                parseCSV(text);
+            } catch (err) {
+                showError(`Error loading Google Sheets: ${err.message}. Make sure the sheet is published to web as CSV.`);
+            }
+        }
+
+        function convertToCSVUrl(url) {
+            // Handle different Google Sheets URL formats
+            let csvUrl = url;
+            
+            // If it's a regular Google Sheets URL, convert it to CSV export format
+            if (url.includes('docs.google.com/spreadsheets')) {
+                // Extract the spreadsheet ID
+                const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+                if (match) {
+                    const spreadsheetId = match[1];
+                    // Extract sheet ID if present (gid parameter)
+                    const gidMatch = url.match(/[#&]gid=([0-9]+)/);
+                    const gid = gidMatch ? gidMatch[1] : '0';
+                    csvUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv&gid=${gid}`;
+                }
+            }
+            
+            // If it's already a CSV export URL, use it as is
+            if (url.includes('/export?format=csv') || url.includes('output=csv')) {
+                csvUrl = url;
+            }
+            
+            return csvUrl;
         }
 
         function loadCSV(file) {
