@@ -1,0 +1,1685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopify CSV Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .upload-section {
+            padding: 30px;
+            text-align: center;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .google-sheets-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .google-sheets-input {
+            width: 100%;
+            max-width: 600px;
+            padding: 12px 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            transition: border-color 0.3s ease;
+        }
+
+        .google-sheets-input:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+
+        .load-sheets-button {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+        }
+
+        .load-sheets-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(14, 165, 233, 0.4);
+        }
+
+        .sheets-help {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin-top: 10px;
+            line-height: 1.5;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-input-button {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .file-input-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .load-default-button {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+            margin-left: 15px;
+        }
+
+        .load-default-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            padding: 20px;
+            background: #f8fafc;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #4f46e5;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin-top: 5px;
+        }
+
+        .controls {
+            padding: 20px 30px;
+            background: #f8fafc;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+
+        .filter-select {
+            padding: 10px 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .view-btn {
+            padding: 8px 16px;
+            border: 2px solid #e5e7eb;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .view-btn.active {
+            background: #4f46e5;
+            color: white;
+            border-color: #4f46e5;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .product-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .product-header {
+            padding: 15px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .product-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .product-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .product-price {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #059669;
+        }
+
+        .product-sku {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.8rem;
+            background: #f3f4f6;
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: #6b7280;
+        }
+
+        .product-variants {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .variant-tag {
+            background: #e0e7ff;
+            color: #3730a3;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .product-images {
+            display: flex;
+            gap: 10px;
+            padding: 15px;
+            background: #f8fafc;
+        }
+
+        .product-image {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            border: 2px solid #e5e7eb;
+            position: relative;
+        }
+
+        .product-image:hover {
+            transform: scale(1.05);
+            border-color: #4f46e5;
+        }
+
+        .product-image[title*="Product"] {
+            border: 2px solid #007bff;
+        }
+
+        .product-image[title*="Variant"] {
+            border: 2px solid #28a745;
+        }
+
+        .image-type-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #fff;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .image-type-badge.product {
+            color: #007bff;
+        }
+
+        .image-type-badge.variant {
+            color: #28a745;
+        }
+        
+        .image-error {
+            width: 80px;
+            height: 80px;
+            background: #fee2e2;
+            border: 2px solid #dc2626;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #dc2626;
+            text-align: center;
+            font-weight: bold;
+            cursor: not-allowed;
+        }
+        
+        .image-error-icon {
+            font-size: 20px;
+            margin-bottom: 2px;
+        }
+
+        .product-actions {
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .details-btn {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.3s ease;
+        }
+
+        .details-btn:hover {
+            background: #4f46e5;
+        }
+
+        .product-status {
+            display: flex;
+            gap: 8px;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-inactive {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .table-container {
+            overflow: auto;
+            max-height: 70vh;
+            display: none;
+        }
+
+        .table-container.active {
+            display: block;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: #4f46e5;
+            color: white;
+            padding: 15px 10px;
+            text-align: left;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #e5e7eb;
+            vertical-align: top;
+        }
+
+        tr:hover {
+            background: #f8fafc;
+        }
+
+        .image-cell {
+            max-width: 200px;
+        }
+
+        .image-preview {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            border: 2px solid #e5e7eb;
+        }
+
+        .image-preview:hover {
+            transform: scale(1.1);
+            border-color: #4f46e5;
+        }
+
+        .image-error {
+            width: 60px;
+            height: 60px;
+            background: #fee2e2;
+            border: 2px solid #fca5a5;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: #dc2626;
+            text-align: center;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .modal img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            color: white;
+            font-size: 35px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1001;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .close:hover {
+            opacity: 0.7;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #dc2626;
+            background: #fee2e2;
+            margin: 20px;
+            border-radius: 8px;
+        }
+
+        .empty-cell {
+            color: #9ca3af;
+            font-style: italic;
+        }
+
+        .price-cell {
+            font-weight: 600;
+            color: #059669;
+        }
+
+        .sku-cell {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.8rem;
+            background: #f3f4f6;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        /* Enhanced Table Styles */
+        .expand-btn {
+            background: #e5e7eb;
+            border: none;
+            border-radius: 4px;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .expand-btn:hover {
+            background: #d1d5db;
+        }
+
+        .expand-btn.expanded {
+            background: #4f46e5;
+            color: white;
+        }
+
+        .main-row {
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .main-row:hover {
+            background: #f8fafc;
+        }
+
+        .details-row {
+            background: #f9fafb;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .details-content {
+            padding: 20px;
+        }
+
+        .row-details {
+            max-width: 100%;
+        }
+
+        .details-section {
+            margin-bottom: 20px;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .details-section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .details-fields {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 12px;
+        }
+
+        .detail-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .detail-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-value {
+            font-size: 0.9rem;
+            color: #374151;
+            word-break: break-word;
+            background: #f9fafb;
+            padding: 6px 8px;
+            border-radius: 4px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .title-cell {
+            font-weight: 600;
+            color: #1f2937;
+            max-width: 250px;
+            word-wrap: break-word;
+        }
+
+        .images-cell {
+            padding: 8px;
+        }
+
+        .image-container {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .table-image-preview {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            border: 2px solid #e5e7eb;
+        }
+
+        .table-image-preview:hover {
+            transform: scale(1.1);
+            border-color: #4f46e5;
+        }
+
+        .table-image-preview[title*="product"] {
+            border-color: #007bff;
+        }
+
+        .table-image-preview[title*="variant"] {
+            border-color: #28a745;
+        }
+
+        .more-images {
+            background: #e5e7eb;
+            color: #6b7280;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        /* Responsive adjustments for enhanced table */
+        @media (max-width: 1200px) {
+            .details-fields {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .details-fields {
+                grid-template-columns: 1fr;
+            }
+            
+            .table-container {
+                font-size: 0.8rem;
+            }
+            
+            th, td {
+                padding: 8px 6px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .stats {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .search-input {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛍️ Shopify CSV Viewer</h1>
+            <p>Load and preview your Shopify export data from CSV files or Google Sheets with image validation</p>
+        </div>
+
+        <div class="upload-section">
+            <div class="file-input-wrapper">
+                <input type="file" id="csvFile" class="file-input" accept=".csv" />
+                <button class="file-input-button">📁 Choose CSV File</button>
+            </div>
+            <!--button id="loadDefault" class="load-default-button">📊 Load Default Output</button-->
+            
+            <div class="google-sheets-section">
+                <h3 style="margin-bottom: 15px; color: #374151;">📊 Load from Google Sheets</h3>
+                <input type="text" id="sheetsUrl" class="google-sheets-input" placeholder="Paste your Google Sheets URL here..." />
+                <br>
+                <button id="loadSheets" class="load-sheets-button">🔗 Load from Google Sheets</button>
+                <div class="sheets-help">
+                    <strong>How to use:</strong><br>
+                    1. Open your Google Sheet<br>
+                    2. Go to File → Share → Publish to web<br>
+                    3. Choose "Comma-separated values (.csv)" format<br>
+                    4. Copy the published URL and paste it above
+                </div>
+            </div>
+        </div>
+
+        <div id="stats" class="stats" style="display: none;">
+            <div class="stat-item">
+                <div id="totalRows" class="stat-number">0</div>
+                <div class="stat-label">Total Rows</div>
+            </div>
+            <div class="stat-item">
+                <div id="uniqueProducts" class="stat-number">0</div>
+                <div class="stat-label">Unique Products</div>
+            </div>
+            <div class="stat-item">
+                <div id="totalImages" class="stat-number">0</div>
+                <div class="stat-label">Images Found</div>
+            </div>
+        </div>
+
+        <div id="controls" class="controls" style="display: none;">
+            <input type="text" id="searchInput" class="search-input" placeholder="🔍 Search products, SKUs, or any field..." />
+            <select id="columnFilter" class="filter-select">
+                <option value="">All Columns</option>
+            </select>
+            <div class="view-toggle">
+                <button id="cardViewBtn" class="view-btn active">📱 Card View</button>
+                <button id="tableViewBtn" class="view-btn">📊 Table View</button>
+            </div>
+            <div class="image-legend" style="margin-left: 20px; font-size: 12px; color: #666;">
+                <span style="color: #007bff;">●</span> P = Product Image &nbsp;
+                <span style="color: #28a745;">●</span> V = Variant Image
+            </div>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            <p>⏳ Loading CSV data...</p>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div id="productsGrid" class="products-grid" style="display: none;"></div>
+
+        <div id="tableContainer" class="table-container" style="display: none;">
+            <table id="dataTable">
+                <thead id="tableHead"></thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="imageModal" class="modal">
+        <span class="close">&times;</span>
+        <div class="modal-content">
+            <img id="modalImage" src="" alt="Product Image" />
+        </div>
+    </div>
+
+    <script>
+        let csvData = [];
+        let filteredData = [];
+        let headers = [];
+
+        // DOM elements
+        const csvFileInput = document.getElementById('csvFile');
+        // const loadDefaultBtn = document.getElementById('loadDefault');
+        const sheetsUrlInput = document.getElementById('sheetsUrl');
+        const loadSheetsBtn = document.getElementById('loadSheets');
+        const searchInput = document.getElementById('searchInput');
+        const columnFilter = document.getElementById('columnFilter');
+        const tableContainer = document.getElementById('tableContainer');
+        const tableHead = document.getElementById('tableHead');
+        const tableBody = document.getElementById('tableBody');
+        const productsGrid = document.getElementById('productsGrid');
+        const cardViewBtn = document.getElementById('cardViewBtn');
+        const tableViewBtn = document.getElementById('tableViewBtn');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const stats = document.getElementById('stats');
+        const controls = document.getElementById('controls');
+        const modal = document.getElementById('imageModal');
+        const modalImage = document.getElementById('modalImage');
+        const closeModal = document.querySelector('.close');
+        
+        let currentView = 'card';
+        let groupedProducts = {};
+
+        // Event listeners
+        csvFileInput.addEventListener('change', handleFileSelect);
+        // loadDefaultBtn.addEventListener('click', loadDefaultFile);
+        loadSheetsBtn.addEventListener('click', loadFromGoogleSheets);
+        searchInput.addEventListener('input', filterData);
+        columnFilter.addEventListener('change', filterData);
+        cardViewBtn.addEventListener('click', () => switchView('card'));
+        tableViewBtn.addEventListener('click', () => switchView('table'));
+        closeModal.addEventListener('click', () => modal.style.display = 'none');
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.style.display = 'none';
+        });
+        
+        // Allow Enter key to load Google Sheets
+        sheetsUrlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                loadFromGoogleSheets();
+            }
+        });
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file && file.type === 'text/csv') {
+                loadCSV(file);
+            } else {
+                showError('Please select a valid CSV file.');
+            }
+        }
+
+        async function loadDefaultFile() {
+            try {
+                showLoading();
+                const response = await fetch('shopify_export_output.csv');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const text = await response.text();
+                parseCSV(text);
+            } catch (err) {
+                showError(`Error loading default file: ${err.message}`);
+            }
+        }
+
+        async function loadFromGoogleSheets() {
+            const url = sheetsUrlInput.value.trim();
+            if (!url) {
+                showError('Please enter a Google Sheets URL.');
+                return;
+            }
+
+            try {
+                showLoading();
+                const csvUrl = convertToCSVUrl(url);
+                const response = await fetch(csvUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch data: ${response.status} ${response.statusText}`);
+                }
+                
+                const text = await response.text();
+                parseCSV(text);
+            } catch (err) {
+                showError(`Error loading Google Sheets: ${err.message}. Make sure the sheet is published to web as CSV.`);
+            }
+        }
+
+        function convertToCSVUrl(url) {
+            // Handle different Google Sheets URL formats
+            let csvUrl = url;
+            
+            // If it's a regular Google Sheets URL, convert it to CSV export format
+            if (url.includes('docs.google.com/spreadsheets')) {
+                // Extract the spreadsheet ID
+                const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+                if (match) {
+                    const spreadsheetId = match[1];
+                    // Extract sheet ID if present (gid parameter)
+                    const gidMatch = url.match(/[#&]gid=([0-9]+)/);
+                    const gid = gidMatch ? gidMatch[1] : '0';
+                    csvUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv&gid=${gid}`;
+                }
+            }
+            
+            // If it's already a CSV export URL, use it as is
+            if (url.includes('/export?format=csv') || url.includes('output=csv')) {
+                csvUrl = url;
+            }
+            
+            return csvUrl;
+        }
+
+        function loadCSV(file) {
+            showLoading();
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                parseCSV(e.target.result);
+            };
+            reader.onerror = function() {
+                showError('Error reading file.');
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCSV(text) {
+            try {
+                const lines = text.split('\n').filter(line => line.trim());
+                if (lines.length === 0) {
+                    throw new Error('CSV file is empty');
+                }
+
+                headers = parseCSVLine(lines[0]);
+                csvData = [];
+
+                for (let i = 1; i < lines.length; i++) {
+                    const row = parseCSVLine(lines[i]);
+                    if (row.length === headers.length) {
+                        const rowObj = {};
+                        headers.forEach((header, index) => {
+                            rowObj[header] = row[index] || '';
+                        });
+                        csvData.push(rowObj);
+                    }
+                }
+
+                filteredData = [...csvData];
+                groupProducts();
+                setupTable();
+                updateStats();
+                hideLoading();
+                showTable();
+            } catch (err) {
+                showError(`Error parsing CSV: ${err.message}`);
+            }
+        }
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                const nextChar = line[i + 1];
+                
+                if (char === '"') {
+                    if (inQuotes && nextChar === '"') {
+                        current += '"';
+                        i++; // Skip next quote
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current);
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            
+            result.push(current);
+            return result;
+        }
+
+        function setupTable() {
+            // Create enhanced header for data checking
+            const headerRow = document.createElement('tr');
+            
+            // Essential columns for data checking
+            const essentialColumns = [
+                { key: 'expand', label: '', width: '40px' },
+                { key: 'Title', label: 'Product Title', width: '250px' },
+                { key: 'SKU', label: 'SKU', width: '120px' },
+                { key: 'Price', label: 'Price', width: '80px' },
+                { key: 'Status', label: 'Status', width: '80px' },
+                { key: 'Images', label: 'Images', width: '120px' },
+                { key: 'Vendor', label: 'Vendor', width: '100px' },
+                { key: 'Type', label: 'Type', width: '100px' }
+            ];
+            
+            essentialColumns.forEach(col => {
+                const th = document.createElement('th');
+                th.textContent = col.label;
+                th.style.width = col.width;
+                th.style.minWidth = col.width;
+                headerRow.appendChild(th);
+            });
+            
+            tableHead.innerHTML = '';
+            tableHead.appendChild(headerRow);
+
+            // Populate column filter
+            columnFilter.innerHTML = '<option value="">All Columns</option>';
+            headers.forEach(header => {
+                const option = document.createElement('option');
+                option.value = header;
+                option.textContent = header;
+                columnFilter.appendChild(option);
+            });
+
+            renderTable();
+        }
+
+        function renderTable() {
+            tableBody.innerHTML = '';
+            
+            filteredData.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                tr.className = 'main-row';
+                tr.dataset.rowIndex = index;
+                
+                // Expand/Collapse button
+                const expandTd = document.createElement('td');
+                const expandBtn = document.createElement('button');
+                expandBtn.className = 'expand-btn';
+                expandBtn.innerHTML = '▶';
+                expandBtn.onclick = () => toggleRowDetails(index);
+                expandTd.appendChild(expandBtn);
+                tr.appendChild(expandTd);
+                
+                // Title
+                const titleTd = document.createElement('td');
+                titleTd.className = 'title-cell';
+                const title = row['Title'] || row['Product Title'] || '—';
+                titleTd.textContent = title;
+                if (title === '—') titleTd.className += ' empty-cell';
+                tr.appendChild(titleTd);
+                
+                // SKU
+                const skuTd = document.createElement('td');
+                const sku = row['SKU'] || row['Variant SKU'] || '—';
+                if (sku !== '—') {
+                    skuTd.innerHTML = `<span class="sku-cell">${sku}</span>`;
+                } else {
+                    skuTd.innerHTML = '<span class="empty-cell">—</span>';
+                }
+                tr.appendChild(skuTd);
+                
+                // Price
+                const priceTd = document.createElement('td');
+                const price = row['Price'] || row['Variant Price'] || '';
+                if (price && !isNaN(price)) {
+                    priceTd.className = 'price-cell';
+                    priceTd.textContent = `$${parseFloat(price).toFixed(2)}`;
+                } else {
+                    priceTd.innerHTML = '<span class="empty-cell">—</span>';
+                }
+                tr.appendChild(priceTd);
+                
+                // Status
+                const statusTd = document.createElement('td');
+                const status = row['Status'] || 'active';
+                const statusBadge = document.createElement('span');
+                statusBadge.className = `status-badge status-${status.toLowerCase()}`;
+                statusBadge.textContent = status;
+                statusTd.appendChild(statusBadge);
+                tr.appendChild(statusTd);
+                
+                // Images
+                const imagesTd = document.createElement('td');
+                imagesTd.className = 'images-cell';
+                const imageContainer = document.createElement('div');
+                imageContainer.className = 'image-container';
+                
+                // Collect all image URLs from the row
+                const imageUrls = [];
+                Object.entries(row).forEach(([key, value]) => {
+                    if (isImageURL(value)) {
+                        imageUrls.push({ url: value, type: key.toLowerCase().includes('variant') ? 'variant' : 'product' });
+                    }
+                });
+                
+                if (imageUrls.length > 0) {
+                    imageUrls.slice(0, 2).forEach(imgData => {
+                        const img = document.createElement('img');
+                        img.className = 'table-image-preview';
+                        img.src = imgData.url;
+                        img.alt = 'Product Image';
+                        img.title = `${imgData.type} image`;
+                        img.onclick = () => showImageModal(imgData.url);
+                        img.onerror = () => handleImageError(img, '40px', '40px');
+                        imageContainer.appendChild(img);
+                    });
+                    
+                    if (imageUrls.length > 2) {
+                        const moreIndicator = document.createElement('span');
+                        moreIndicator.className = 'more-images';
+                        moreIndicator.textContent = `+${imageUrls.length - 2}`;
+                        imageContainer.appendChild(moreIndicator);
+                    }
+                } else {
+                    imageContainer.innerHTML = '<span class="empty-cell">No images</span>';
+                }
+                
+                imagesTd.appendChild(imageContainer);
+                tr.appendChild(imagesTd);
+                
+                // Vendor
+                const vendorTd = document.createElement('td');
+                const vendor = row['Vendor'] || '—';
+                vendorTd.textContent = vendor;
+                if (vendor === '—') vendorTd.className = 'empty-cell';
+                tr.appendChild(vendorTd);
+                
+                // Type
+                const typeTd = document.createElement('td');
+                const type = row['Type'] || row['Product Category'] || '—';
+                typeTd.textContent = type;
+                if (type === '—') typeTd.className = 'empty-cell';
+                tr.appendChild(typeTd);
+                
+                tableBody.appendChild(tr);
+                
+                // Create details row (initially hidden)
+                const detailsRow = document.createElement('tr');
+                detailsRow.className = 'details-row';
+                detailsRow.style.display = 'none';
+                detailsRow.dataset.rowIndex = index;
+                
+                const detailsTd = document.createElement('td');
+                detailsTd.colSpan = 8;
+                detailsTd.className = 'details-content';
+                
+                // Create details content
+                const detailsContent = createDetailsContent(row);
+                detailsTd.appendChild(detailsContent);
+                
+                detailsRow.appendChild(detailsTd);
+                tableBody.appendChild(detailsRow);
+            });
+        }
+
+        function isImageURL(url) {
+            if (!url || typeof url !== 'string') return false;
+            return url.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) || 
+                   url.includes('image') || 
+                   url.includes('photo') ||
+                   url.includes('uploads');
+        }
+        
+        function toggleRowDetails(rowIndex) {
+            const mainRow = document.querySelector(`tr.main-row[data-row-index="${rowIndex}"]`);
+            const detailsRow = document.querySelector(`tr.details-row[data-row-index="${rowIndex}"]`);
+            const expandBtn = mainRow.querySelector('.expand-btn');
+            
+            if (detailsRow.style.display === 'none') {
+                detailsRow.style.display = 'table-row';
+                expandBtn.innerHTML = '▼';
+                expandBtn.classList.add('expanded');
+            } else {
+                detailsRow.style.display = 'none';
+                expandBtn.innerHTML = '▶';
+                expandBtn.classList.remove('expanded');
+            }
+        }
+        
+        function createDetailsContent(row) {
+            const container = document.createElement('div');
+            container.className = 'row-details';
+            
+            // Create sections for different types of data
+            const sections = [
+                { title: 'Product Information', fields: ['Description', 'Tags', 'Product Category', 'Published', 'Published Scope'] },
+                { title: 'Variant Details', fields: ['Option1 Name', 'Option1 Value', 'Option2 Name', 'Option2 Value', 'Option3 Name', 'Option3 Value'] },
+                { title: 'Inventory & Shipping', fields: ['Variant Inventory Tracker', 'Variant Inventory Qty', 'Variant Inventory Policy', 'Variant Fulfillment Service', 'Variant Price', 'Variant Compare At Price', 'Variant Requires Shipping', 'Variant Taxable', 'Variant Barcode'] },
+                { title: 'SEO & Meta', fields: ['SEO Title', 'SEO Description', 'Google Shopping / Google Product Category', 'Google Shopping / Gender', 'Google Shopping / Age Group', 'Google Shopping / MPN', 'Google Shopping / AdWords Grouping', 'Google Shopping / AdWords Labels', 'Google Shopping / Condition', 'Google Shopping / Custom Product', 'Google Shopping / Custom Label 0', 'Google Shopping / Custom Label 1', 'Google Shopping / Custom Label 2', 'Google Shopping / Custom Label 3', 'Google Shopping / Custom Label 4'] },
+                { title: 'Additional Fields', fields: [] }
+            ];
+            
+            // Get all fields not covered in specific sections
+            const coveredFields = new Set();
+            sections.slice(0, -1).forEach(section => {
+                section.fields.forEach(field => coveredFields.add(field));
+            });
+            coveredFields.add('Title');
+            coveredFields.add('SKU');
+            coveredFields.add('Variant SKU');
+            coveredFields.add('Price');
+            coveredFields.add('Status');
+            coveredFields.add('Vendor');
+            coveredFields.add('Type');
+            
+            // Add remaining fields to Additional Fields
+            Object.keys(row).forEach(key => {
+                if (!coveredFields.has(key) && !isImageURL(row[key])) {
+                    sections[sections.length - 1].fields.push(key);
+                }
+            });
+            
+            sections.forEach(section => {
+                if (section.fields.length === 0) return;
+                
+                const sectionDiv = document.createElement('div');
+                sectionDiv.className = 'details-section';
+                
+                const sectionTitle = document.createElement('h4');
+                sectionTitle.className = 'details-section-title';
+                sectionTitle.textContent = section.title;
+                sectionDiv.appendChild(sectionTitle);
+                
+                const fieldsGrid = document.createElement('div');
+                fieldsGrid.className = 'details-fields';
+                
+                section.fields.forEach(field => {
+                    const value = row[field];
+                    if (value && value.trim()) {
+                        const fieldDiv = document.createElement('div');
+                        fieldDiv.className = 'detail-field';
+                        
+                        const label = document.createElement('span');
+                        label.className = 'detail-label';
+                        label.textContent = field + ':';
+                        
+                        const valueSpan = document.createElement('span');
+                        valueSpan.className = 'detail-value';
+                        valueSpan.textContent = value;
+                        
+                        fieldDiv.appendChild(label);
+                        fieldDiv.appendChild(valueSpan);
+                        fieldsGrid.appendChild(fieldDiv);
+                    }
+                });
+                
+                if (fieldsGrid.children.length > 0) {
+                    sectionDiv.appendChild(fieldsGrid);
+                    container.appendChild(sectionDiv);
+                }
+            });
+            
+            return container;
+        }
+        
+        function handleImageError(imgElement, width = '80px', height = '80px') {
+            imgElement.style.display = 'none';
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'image-error';
+            errorDiv.style.width = width;
+            errorDiv.style.height = height;
+            
+            const errorContent = document.createElement('div');
+            const errorIcon = document.createElement('div');
+            errorIcon.className = 'image-error-icon';
+            errorIcon.textContent = '❌';
+            
+            const errorText = document.createTextNode('Failed to Load');
+            
+            errorContent.appendChild(errorIcon);
+            errorContent.appendChild(errorText);
+            errorDiv.appendChild(errorContent);
+            
+            imgElement.parentElement.appendChild(errorDiv);
+        }
+
+        function showImageModal(src) {
+            // Clear modal content first for fresh load
+            modal.innerHTML = '';
+            
+            // Create fresh modal content
+            const modalContent = `
+                <span class="close">&times;</span>
+                <div class="modal-content">
+                    <img id="modalImage" src="${src}" alt="Product Image" />
+                </div>
+            `;
+            
+            modal.innerHTML = modalContent;
+            modal.style.display = 'block';
+            
+            // Re-attach close event listeners
+            const newCloseBtn = modal.querySelector('.close');
+            newCloseBtn.addEventListener('click', () => modal.style.display = 'none');
+        }
+
+        function filterData() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const selectedColumn = columnFilter.value;
+            
+            filteredData = csvData.filter(row => {
+                const searchMatch = !searchTerm || 
+                    Object.values(row).some(value => 
+                        value.toString().toLowerCase().includes(searchTerm)
+                    );
+                
+                const columnMatch = !selectedColumn || 
+                    row[selectedColumn].toString().toLowerCase().includes(searchTerm);
+                
+                return searchMatch && (selectedColumn ? columnMatch : true);
+            });
+            
+            // Re-group products with filtered data
+            const originalData = csvData;
+            csvData = filteredData;
+            groupProducts();
+            csvData = originalData;
+            
+            if (currentView === 'card') {
+                renderCards();
+            } else {
+                renderTable();
+            }
+            updateStats();
+        }
+
+        function switchView(view) {
+            currentView = view;
+            
+            // Update button states
+            cardViewBtn.classList.toggle('active', view === 'card');
+            tableViewBtn.classList.toggle('active', view === 'table');
+            
+            // Show/hide containers
+            if (view === 'card') {
+                productsGrid.style.display = 'grid';
+                tableContainer.style.display = 'none';
+                renderCards();
+            } else {
+                productsGrid.style.display = 'none';
+                tableContainer.style.display = 'block';
+                renderTable();
+            }
+        }
+
+        function groupProducts() {
+            groupedProducts = {};
+            let currentProduct = null;
+            
+            csvData.forEach(row => {
+                const title = row['Title'] || '';
+                
+                // If title exists, this is a main product
+                if (title.trim()) {
+                    currentProduct = {
+                        title: title,
+                        variants: [],
+                        images: new Set(),
+                        priceRange: { min: Infinity, max: -Infinity },
+                        description: row['Description'] || '',
+                        vendor: row['Vendor'] || '',
+                        status: row['Status'] || 'active'
+                    };
+                    groupedProducts[title] = currentProduct;
+                    
+                    // Add this row as the first variant if it has variant data
+                    if (row['SKU'] || row['Variant SKU'] || row['Price']) {
+                        currentProduct.variants.push(row);
+                    }
+                } else if (currentProduct) {
+                    // This is a variant or additional image for the current product
+                    if (row['SKU'] || row['Variant SKU'] || row['Price']) {
+                        // This row has variant data, add as variant
+                        currentProduct.variants.push(row);
+                    }
+                    // Always collect images from variant rows
+                }
+                
+                // Collect images from current row
+                if (currentProduct) {
+                    // Separate product images and variant images
+                    const productImageURL = row['Product image URL'] || row['Image Src'] || '';
+                    const variantImageURL = row['Variant image URL'] || row['Variant Image Src'] || '';
+                    
+                    if (productImageURL && isImageURL(productImageURL)) {
+                        currentProduct.images.add(productImageURL);
+                    }
+                    if (variantImageURL && isImageURL(variantImageURL)) {
+                        currentProduct.images.add(variantImageURL);
+                    }
+                    
+                    // Also check other columns for additional images
+                    Object.entries(row).forEach(([key, value]) => {
+                        if (key.toLowerCase().includes('image') && isImageURL(value)) {
+                            currentProduct.images.add(value);
+                        }
+                    });
+                    
+                    // Track price range
+                    const price = parseFloat(row['Price'] || 0);
+                    if (price > 0) {
+                        currentProduct.priceRange.min = Math.min(currentProduct.priceRange.min, price);
+                        currentProduct.priceRange.max = Math.max(currentProduct.priceRange.max, price);
+                    }
+                }
+            });
+            
+            // Convert images Set to Array and clean up products with no variants
+            Object.keys(groupedProducts).forEach(title => {
+                const product = groupedProducts[title];
+                product.images = Array.from(product.images);
+                
+                // If no variants found, remove the product
+                if (product.variants.length === 0) {
+                    delete groupedProducts[title];
+                }
+            });
+        }
+
+        function renderCards() {
+            productsGrid.innerHTML = '';
+            
+            const searchTerm = searchInput.value.toLowerCase();
+            
+            Object.values(groupedProducts).forEach(product => {
+                // Filter products based on search
+                if (searchTerm && !product.title.toLowerCase().includes(searchTerm) && 
+                    !product.variants.some(variant => 
+                        Object.values(variant).some(value => 
+                            value.toString().toLowerCase().includes(searchTerm)
+                        )
+                    )) {
+                    return;
+                }
+                
+                const card = createProductCard(product);
+                productsGrid.appendChild(card);
+            });
+        }
+
+        function createProductCard(product) {
+            const card = document.createElement('div');
+            card.className = 'product-card';
+            
+            // Get variant info
+            const variants = product.variants.map(v => {
+                const color = v['Option1 value'] || v['Color'] || '';
+                const size = v['Option2 value'] || v['Size'] || '';
+                return { color, size, sku: v['SKU'] || v['Variant SKU'] || '', price: v['Price'] || '' };
+            });
+            
+            // Get unique colors and sizes
+            const colors = [...new Set(variants.map(v => v.color).filter(Boolean))];
+            const sizes = [...new Set(variants.map(v => v.size).filter(Boolean))];
+            
+            // Price display
+            let priceDisplay = '';
+            if (product.priceRange.min === product.priceRange.max) {
+                priceDisplay = `$${product.priceRange.min.toFixed(2)}`;
+            } else if (product.priceRange.min !== Infinity) {
+                priceDisplay = `$${product.priceRange.min.toFixed(2)} - $${product.priceRange.max.toFixed(2)}`;
+            }
+            
+            card.innerHTML = `
+                <div class="product-header">
+                    <div class="product-title">${product.title}</div>
+                    <div class="product-meta">
+                        <div class="product-price">${priceDisplay}</div>
+                        <div class="product-sku">${variants[0]?.sku || 'N/A'}</div>
+                    </div>
+                    <div class="product-variants">
+                        ${colors.map(color => `<span class="variant-tag">${color}</span>`).join('')}
+                        ${sizes.map(size => `<span class="variant-tag">${size}</span>`).join('')}
+                    </div>
+                </div>
+                
+                ${product.images.length > 0 ? `
+                    <div class="product-images">
+                        ${(() => {
+                            // Separate product and variant images for better display
+                            const productImages = [];
+                            const variantImages = [];
+                            
+                            product.variants.forEach(variant => {
+                                const productImg = variant['Product image URL'] || variant['Image Src'];
+                                const variantImg = variant['Variant image URL'] || variant['Variant Image Src'];
+                                
+                                if (productImg && isImageURL(productImg) && !productImages.includes(productImg)) {
+                                    productImages.push(productImg);
+                                }
+                                if (variantImg && isImageURL(variantImg) && !variantImages.includes(variantImg)) {
+                                    variantImages.push(variantImg);
+                                }
+                            });
+                            
+                            // Display product images first, then variant images
+                            const allImages = [...productImages, ...variantImages];
+                            return allImages.slice(0, 4).map((img, index) => {
+                                 const imageType = productImages.includes(img) ? 'Product' : 'Variant';
+                                 const badgeClass = imageType.toLowerCase();
+                                 const badgeSymbol = imageType === 'Product' ? 'P' : 'V';
+                                 return `<div style="position: relative; display: inline-block;">
+                                          <img src="${img}" alt="${imageType} Image" title="${imageType} Image" class="product-image" 
+                                               onclick="showImageModal('${img}')" 
+                                               onerror="handleImageError(this)" />
+                                          <div class="image-type-badge ${badgeClass}">${badgeSymbol}</div>
+                                         </div>`;
+                             }).join('');
+                        })()} 
+                        ${product.images.length > 4 ? `<div class="variant-tag">+${product.images.length - 4} more</div>` : ''}
+                    </div>
+                ` : ''}
+                
+                <div class="product-actions">
+                    <button class="details-btn" onclick="showProductDetails('${product.title}')">
+                        📋 View Details (${product.variants.length} variants)
+                    </button>
+                    <div class="product-status">
+                        <span class="status-badge ${product.status === 'active' ? 'status-active' : 'status-inactive'}">
+                            ${product.status}
+                        </span>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        function showProductDetails(title) {
+            const product = groupedProducts[title];
+            if (!product) return;
+            
+            // Clear modal content first for fresh load
+            modal.innerHTML = '';
+            
+            // Create a detailed modal or expand the card
+            const detailsHTML = `
+                <div style="max-width: 800px; max-height: 80vh; overflow-y: auto; background: white; padding: 20px; border-radius: 12px;">
+                    <h2 style="margin-bottom: 20px; color: #1f2937;">${product.title}</h2>
+                    
+                    ${product.description ? `<p style="margin-bottom: 20px; color: #6b7280;">${product.description}</p>` : ''}
+                    
+                    <h3 style="margin-bottom: 15px; color: #374151;">Variants (${product.variants.length})</h3>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                            <thead>
+                                <tr style="background: #f3f4f6;">
+                                    <th style="padding: 10px; text-align: left; border: 1px solid #e5e7eb;">SKU</th>
+                                    <th style="padding: 10px; text-align: left; border: 1px solid #e5e7eb;">Color</th>
+                                    <th style="padding: 10px; text-align: left; border: 1px solid #e5e7eb;">Size</th>
+                                    <th style="padding: 10px; text-align: left; border: 1px solid #e5e7eb;">Price</th>
+                                    <th style="padding: 10px; text-align: left; border: 1px solid #e5e7eb;">Inventory</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${product.variants.map(variant => `
+                                    <tr>
+                                        <td style="padding: 8px; border: 1px solid #e5e7eb; font-family: monospace;">${variant['SKU'] || variant['Variant SKU'] || 'N/A'}</td>
+                                        <td style="padding: 8px; border: 1px solid #e5e7eb;">${variant['Option1 value'] || variant['Color'] || 'N/A'}</td>
+                                        <td style="padding: 8px; border: 1px solid #e5e7eb;">${variant['Option2 value'] || variant['Size'] || 'N/A'}</td>
+                                        <td style="padding: 8px; border: 1px solid #e5e7eb; font-weight: 600; color: #059669;">$${parseFloat(variant['Price'] || 0).toFixed(2)}</td>
+                                        <td style="padding: 8px; border: 1px solid #e5e7eb;">${variant['Inventory quantity'] || 'N/A'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    ${product.images.length > 0 ? `
+                        <h3 style="margin: 20px 0 15px 0; color: #374151;">Images (${product.images.length})</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px;">
+                            ${product.images.map(img => `
+                                <div style="position: relative;">
+                                    <img src="${img}" alt="Product Image" 
+                                         style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 2px solid #e5e7eb;"
+                                         onclick="showImageModal('${img}')" 
+                                         onerror="handleImageError(this, '100%', '120px')" />
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                    
+                    <button onclick="modal.style.display='none'" 
+                            style="margin-top: 20px; background: #6366f1; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
+                        Close
+                    </button>
+                </div>
+            `;
+            
+            modal.innerHTML = `<span class="close">&times;</span><div class="modal-content">${detailsHTML}</div>`;
+            modal.style.display = 'block';
+            
+            // Re-attach close event listeners
+            const newCloseBtn = modal.querySelector('.close');
+            newCloseBtn.addEventListener('click', () => modal.style.display = 'none');
+        }
+
+        function updateStats() {
+            const totalRows = filteredData.length;
+            const uniqueProducts = new Set(filteredData.map(row => row['Title'] || row['Product'] || '')).size;
+            const totalImages = filteredData.reduce((count, row) => {
+                return count + Object.values(row).filter(value => isImageURL(value)).length;
+            }, 0);
+            
+            document.getElementById('totalRows').textContent = totalRows;
+            document.getElementById('uniqueProducts').textContent = uniqueProducts;
+            document.getElementById('totalImages').textContent = totalImages;
+        }
+
+        function showLoading() {
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            tableContainer.style.display = 'none';
+            stats.style.display = 'none';
+            controls.style.display = 'none';
+        }
+
+        function hideLoading() {
+            loading.style.display = 'none';
+        }
+
+        function showError(message) {
+            error.textContent = message;
+            error.style.display = 'block';
+            loading.style.display = 'none';
+            tableContainer.style.display = 'none';
+            stats.style.display = 'none';
+            controls.style.display = 'none';
+        }
+
+        function showTable() {
+            stats.style.display = 'flex';
+            controls.style.display = 'flex';
+            error.style.display = 'none';
+            
+            // Show card view by default
+            switchView('card');
+        }
+    </script>
+</body>
+</html>
